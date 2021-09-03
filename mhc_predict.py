@@ -8,7 +8,7 @@ predictions for the HLAs (class I). The tools uses MHC-flurry for the prediction
 """
 from hlapipeline.common import exec_command
 from collections import Counter
-from _collections import defaultdict
+from collections import defaultdict
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys

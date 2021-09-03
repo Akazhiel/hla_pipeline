@@ -94,19 +94,19 @@ def main(dna_variants,
         print('Loading Gene counts..')
         for file, name in zip(rna_counts, rna_names):
             counts_table = pd.read_csv(file, sep='\t', skiprows=1)
-            counts = counts_table.iloc[:, 6].to_numpy()
-            counts_filtered = list(filter(lambda x: x != 0, counts))      
+            counts = counts_table.iloc[:, 6].to_numpy()     
             lengths = counts_table['Length'].to_numpy()
-            rpk = counts / lengths
-            counts_table['RPKM'] = (rpk / sum(counts)) * 1e9
-            counts_table['TPM'] = (rpk / sum(rpk)) * 1e6
-            gene_counts = counts_table.iloc[:, [0, 6]].values.tolist()
-            for gene, expr in gene_counts:
+            rpb = counts / lengths
+            counts_table['RPKM'] = (rpb / sum(counts)) * 1e9
+            counts_table['TPM'] = (rpb / sum(rpb)) * 1e6
+            gene_counts_tpm = counts_table.iloc[:, [0, 6, 8]].values.tolist()
+            tpm_filtered = list(filter(lambda x: x != 0, counts_table['TPM']))
+            for gene, expr, tpm in gene_counts_tpm:
                 counts_dict[name][gene] = float(expr)
                 counts_stats_percentile[name][gene] = np.around(
-                         stats.percentileofscore(counts_filtered, float(expr), kind='strict'), 3)
+                         stats.percentileofscore(tpm_filtered, float(tpm), kind='strict'), 3)
             counts_stats[name] =  np.around(np.mean(counts), 3)
-            counts_table['Percentile'] = counts_stats_percentile[name].values()
+            counts_table['Percentile_TPM'] = counts_stats_percentile[name].values()
             counts_table.to_csv(file + '.final', sep='\t', index=False)
 
     print('Creating merged variants..')
