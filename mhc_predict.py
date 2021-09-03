@@ -11,7 +11,7 @@ The tools uses MHC-flurry for the predictions.
 """
 from hlapipeline.common import exec_command
 from collections import Counter
-from _collections import defaultdict
+from collections import defaultdict
 import json
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
