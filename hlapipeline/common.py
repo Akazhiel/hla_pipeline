@@ -4,8 +4,6 @@
 import subprocess
 import sys
 from hlapipeline.tools import *
-import pandas as pd
-import re
 import os
 import logging
 
@@ -30,14 +28,14 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
     Performs HLA typing with OptiType for either RNA or DNA data.
     :param inputbam: BAM file with aligned reads
     :param threads: the number of threads
-    :param origin: prefix for the output hla genotype file.
-    :param sample: prefix for the sample name.
-    :param fasta: HLA reference fasta.
+    :param origin: prefix for the output hla genotype file
+    :param sample: prefix for the sample name
+    :param fasta: HLA reference fasta file
+    :param KEEP: do not discard temp files when True
     """
 
-    THREADS = max(int(threads/2), 1)
-
-    logger = logging.getLogger()
+    # We do not need many threads for Samtools view
+    SAMTOOLS_THREADS = max(int(threads / 2), 1)
 
     # TODO use os.makedirs instead
     cmd = 'mkdir -p {}/index'.format(os.getcwd())
@@ -46,10 +44,10 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
     cmd = '{} {} -o {}/index/hla_reference'.format(YARAI, fasta, os.getcwd())
     exec_command(cmd)
 
-    cmd = '{} view -@ {} -h -f 0x40 {} > {}_output_1.bam'.format(SAMTOOLS, THREADS, inputbam, origin)
+    cmd = '{} view -@ {} -h -f 0x40 {} > {}_output_1.bam'.format(SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin)
     p1 = exec_command(cmd, detach=True)
 
-    cmd = '{} view -@ {} -h -f 0x80 {} > {}_output_2.bam'.format(SAMTOOLS, THREADS, inputbam, origin)
+    cmd = '{} view -@ {} -h -f 0x80 {} > {}_output_2.bam'.format(SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin)
     p2 = exec_command(cmd, detach=True)
 
     p1.wait()
@@ -80,10 +78,16 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
         if os.path.isfile('{}_output_2.fastq'.format(origin)):
             os.remove('{}_output_2.fastq'.format(origin))
 
-    cmd = '{} view -@ {} -h -F 4 -f 0x40 -b1 {}_output.bam > {}_mapped_1.bam'.format(SAMTOOLS, THREADS, origin, origin)
+    cmd = '{} view -@ {} -h -F 4 -f 0x40 -b1 {}_output.bam > {}_mapped_1.bam'.format(SAMTOOLS,
+                                                                                     SAMTOOLS_THREADS,
+                                                                                     origin,
+                                                                                     origin)
     p1 = exec_command(cmd, detach=True)
 
-    cmd = '{} view -@ {} -h -F 4 -f 0x80 -b1 {}_output.bam > {}_mapped_2.bam'.format(SAMTOOLS, THREADS, origin, origin)
+    cmd = '{} view -@ {} -h -F 4 -f 0x80 -b1 {}_output.bam > {}_mapped_2.bam'.format(SAMTOOLS,
+                                                                                     SAMTOOLS_THREADS,
+                                                                                     origin,
+                                                                                     origin)
     p2 = exec_command(cmd, detach=True)
 
     p1.wait()
@@ -102,18 +106,19 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
             os.remove('{}_mapped_2.bam'.format(origin))
 
 
-def annotate_variants(input, output, db, version, threads):
+def annotate_variants(input, db, version, threads, fasta, cache):
     """
-    Annotate a VCF using Annovar
+    Annotate a VCF using VEP
     :param input: the VCF file
     :param output: the annotated VCF file
-    :param db: the species (humandb or mousedb)
-    :param version: the version (hg19 or hg38)
+    :param db: the genome assembly (GRCh37, GRCh38)
+    :param version: the ensembl version (75, 102, etc..)
     :param threads: the number of threads to use
+    :param cache: the location of the VEP cache, can be None (default location)
     """
-    annovardb = '{} -buildver {}'.format(os.path.join(ANNOVAR_PATH, db), version)
-    cmd = '{} {} {} -thread {} -out {} -vcfinput -remove -protocol {}'.format(
-        os.path.join(ANNOVAR_PATH, 'table_annovar.pl'), input, annovardb, threads, output, ANNOVAR_ANNO)
+    cache_cmd = '--dir_cache {}'.format(cache) if cache is not None else ''
+    cmd = '{} -i {} --fork {} -o annotated.{}_multianno.vcf --fasta {} --format vcf --vcf --assembly {} '\
+        '--cache_version {} --species homo_sapiens {} {}'.format(VEP, input, threads, db, fasta, db, version, VEP_OPTIONS, cache_cmd)
     exec_command(cmd)
 
 
@@ -123,16 +128,21 @@ def vcf_stats(annotated_VCF, sampleID):
     :param annotated_VCF: annotated VCF file
     :param sampleID: the ID to give to the sample
     """
+
     # VCFtools: pairwise individual relatedness using relatedness2 method
     cmd = '{} --vcf {} --relatedness2 --out {}'.format(VCFTOOLS, annotated_VCF, sampleID)
     exec_command(cmd)
+
     # VCFtools: summary of all Transitions and Transversions
     cmd = '{} --vcf {} --TsTv-summary --out {}'.format(VCFTOOLS, annotated_VCF, sampleID)
     exec_command(cmd)
+
     # bcftools multiple stats
     cmd = '{} -c {} > {}.gz'.format(BGZIP, annotated_VCF, annotated_VCF)
     exec_command(cmd)
+
     cmd = '{} -p vcf {}.gz'.format(TABIX, annotated_VCF)
     exec_command(cmd)
+
     cmd = '{} stats {}.gz > {}.vchk'.format(BCFTOOLS, annotated_VCF, sampleID)
     exec_command(cmd)
