@@ -4,9 +4,10 @@ name: hla
 channels:
   - conda-forge
   - bioconda
+  - r
   - defaults
 dependencies:
-  - python=3.6.1
+  - python~=3.6.1
   - tensorflow=1.15.0
   - biopython
   - bioconda::gatk4-spark
@@ -27,4 +28,5 @@ dependencies:
   - bioconda::optitype
   - bioconda::yara
   - bioconda::vcfpy
-  - bioconda:ensembl-vep=102.0
+  - bioconda::ensembl-vep=102.0
+  - bioconda::delly

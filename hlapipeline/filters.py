@@ -2,7 +2,9 @@
 @author: Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com
 """
 import gzip
+
 from hlapipeline.common import exec_command
+from hlapipeline.tools import BCFTOOLS, DELLY
 
 
 def index_column_substring(your_list, substring):
@@ -57,7 +59,9 @@ def strelka2_filter(input, output):
     vcf = gzip.open(input, 'rt')
     for line in vcf:
         if '##FORMAT=<ID=DP,' in line:
-            filtered_vcf.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n' + line)
+            filtered_vcf.write(
+                '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n' + line
+            )
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(line)
@@ -103,12 +107,11 @@ def strelka2_filter(input, output):
                 elif x != ref and i == 2:
                     Tumor_GT += '/1'
                     i = i + 1
-            filtered_vcf.write('{}\t{}\t{}:{}\t{}:{}\n'.format('\t'.join(columns[0:8]),
-                                                               Format,
-                                                               Normal_GT,
-                                                               Normal,
-                                                               Tumor_GT,
-                                                               Tumor))
+            filtered_vcf.write(
+                '{}\t{}\t{}:{}\t{}:{}\n'.format(
+                    '\t'.join(columns[0:8]), Format, Normal_GT, Normal, Tumor_GT, Tumor
+                )
+            )
         else:
             filtered_vcf.write(line)
     vcf.close()
@@ -129,7 +132,8 @@ def strelka2_filter_indels(input, output):
         if '##FORMAT=<ID=DP,' in line:
             filtered_vcf.write(
                 '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
-                '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n')
+                '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n'
+            )
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(line)
@@ -148,12 +152,11 @@ def strelka2_filter_indels(input, output):
                 SGT = INFO_split[SGT_index].replace('SGT=', '').split('->')
                 Normal_GT = '0/0'
                 Tumor_GT = '0/1' if SGT[1] == 'het' else '1/1'
-                filtered_vcf.write('{}\t{}\t{}:{}\t{}:{}\n'.format('\t'.join(columns[0:8]),
-                                                                   Format,
-                                                                   Normal_GT,
-                                                                   Normal,
-                                                                   Tumor_GT,
-                                                                   Tumor))
+                filtered_vcf.write(
+                    '{}\t{}\t{}:{}\t{}:{}\n'.format(
+                        '\t'.join(columns[0:8]), Format, Normal_GT, Normal, Tumor_GT, Tumor
+                    )
+                )
         else:
             filtered_vcf.write(line)
     vcf.close()
@@ -189,8 +192,10 @@ def somaticSniper_filter(input, output):
 
     # NOTE replacing IUPAC codes from VCF
     # NOTE this will also skip variants whose REF and ALT fields are identical
-    cmd = 'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' ' \
-          'tmp_ss.vcf > ' + output
+    cmd = (
+        'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' '
+        'tmp_ss.vcf > ' + output
+    )
     exec_command(cmd)
 
 
@@ -208,7 +213,8 @@ def varscan_filter(input, output):
         if line.startswith('#') and 'DP4' in line:
             new_DP4 = line.replace(
                 'ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev"',
-                'ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases"')
+                'ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases"',
+            )
             filtered_vcf.write(new_DP4)
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
@@ -226,6 +232,21 @@ def varscan_filter(input, output):
 
     # NOTE replacing IUPAC codes from VCF
     # NOTE this will also skip variants whose REF and ALT fields are identical
-    cmd = 'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' ' \
-          'tmp_varscan.vcf > ' + output
+    cmd = (
+        'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' '
+        'tmp_varscan.vcf > ' + output
+    )
+    exec_command(cmd)
+
+
+def delly_filter(input, output, sample1, sample2):
+    with open('samples.tsv', 'w') as s:
+        s.write(f'{sample1}\ttumor\n{sample2}\tcontrol')
+
+    cmd = '{} filter -v 0 -q 0 -r 0 -f somatic -o delly_somatic.bcf -s samples.tsv {}'.format(
+        DELLY, input
+    )
+    exec_command(cmd)
+
+    cmd = '{} view delly_somatic.bcf -o {}'.format(BCFTOOLS, output)
     exec_command(cmd)

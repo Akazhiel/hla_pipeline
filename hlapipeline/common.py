@@ -44,10 +44,14 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
     cmd = '{} {} -o {}/index/hla_reference'.format(YARAI, fasta, os.getcwd())
     exec_command(cmd)
 
-    cmd = '{} view -@ {} -h -f 0x40 {} > {}_output_1.bam'.format(SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin)
+    cmd = '{} view -@ {} -h -f 0x40 {} > {}_output_1.bam'.format(
+        SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin
+    )
     p1 = exec_command(cmd, detach=True)
 
-    cmd = '{} view -@ {} -h -f 0x80 {} > {}_output_2.bam'.format(SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin)
+    cmd = '{} view -@ {} -h -f 0x80 {} > {}_output_2.bam'.format(
+        SAMTOOLS, SAMTOOLS_THREADS, inputbam, origin
+    )
     p2 = exec_command(cmd, detach=True)
 
     p1.wait()
@@ -69,7 +73,8 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
             os.remove('{}_output_2.bam'.format(origin))
 
     cmd = '{} -e 3 -t {} -f bam {}/index/hla_reference {}_output_1.fastq {}_output_2.fastq > {}_output.bam'.format(
-        YARAM, threads, os.getcwd(), origin, origin, origin)
+        YARAM, threads, os.getcwd(), origin, origin, origin
+    )
     exec_command(cmd)
 
     if not KEEP:
@@ -78,23 +83,22 @@ def HLA_prediction(inputbam, threads, origin, sample, fasta, nacid, KEEP):
         if os.path.isfile('{}_output_2.fastq'.format(origin)):
             os.remove('{}_output_2.fastq'.format(origin))
 
-    cmd = '{} view -@ {} -h -F 4 -f 0x40 -b1 {}_output.bam > {}_mapped_1.bam'.format(SAMTOOLS,
-                                                                                     SAMTOOLS_THREADS,
-                                                                                     origin,
-                                                                                     origin)
+    cmd = '{} view -@ {} -h -F 4 -f 0x40 -b1 {}_output.bam > {}_mapped_1.bam'.format(
+        SAMTOOLS, SAMTOOLS_THREADS, origin, origin
+    )
     p1 = exec_command(cmd, detach=True)
 
-    cmd = '{} view -@ {} -h -F 4 -f 0x80 -b1 {}_output.bam > {}_mapped_2.bam'.format(SAMTOOLS,
-                                                                                     SAMTOOLS_THREADS,
-                                                                                     origin,
-                                                                                     origin)
+    cmd = '{} view -@ {} -h -F 4 -f 0x80 -b1 {}_output.bam > {}_mapped_2.bam'.format(
+        SAMTOOLS, SAMTOOLS_THREADS, origin, origin
+    )
     p2 = exec_command(cmd, detach=True)
 
     p1.wait()
     p2.wait()
 
     cmd = '{} --input {}_mapped_1.bam {}_mapped_2.bam --{} --prefix {}_{}_hla_genotype --outdir {}'.format(
-        OPTITYPE, origin, origin, nacid, origin, sample, os.getcwd())
+        OPTITYPE, origin, origin, nacid, origin, sample, os.getcwd()
+    )
     exec_command(cmd)
 
     if not KEEP:
@@ -117,8 +121,12 @@ def annotate_variants(input, db, version, threads, fasta, cache):
     :param cache: the location of the VEP cache, can be None (default location)
     """
     cache_cmd = '--dir_cache {}'.format(cache) if cache is not None else ''
-    cmd = '{} -i {} --fork {} -o annotated.{}_multianno.vcf --fasta {} --format vcf --vcf --assembly {} '\
-        '--cache_version {} --species homo_sapiens {} {}'.format(VEP, input, threads, db, fasta, db, version, VEP_OPTIONS, cache_cmd)
+    cmd = (
+        '{} -i {} --fork {} -o annotated.{}_multianno.vcf --fasta {} --format vcf --vcf --assembly {} '
+        '--cache_version {} --species homo_sapiens {} {}'.format(
+            VEP, input, threads, db, fasta, db, version, VEP_OPTIONS, cache_cmd
+        )
+    )
     exec_command(cmd)
 
 

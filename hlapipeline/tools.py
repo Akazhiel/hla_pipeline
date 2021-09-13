@@ -10,6 +10,8 @@ GATK = 'gatk'
 GATK3 = 'java -jar ' + os.path.join(os.environ['GATK3_PATH'])
 VARSCAN = 'varscan'
 STRELKA = os.path.join(os.environ['STRELKA_PATH'], 'bin', 'configureStrelkaSomaticWorkflow.py')
+MANTA = os.path.join(os.environ['MANTA_PATH'], 'bin', 'configManta.py')
+DELLY = 'delly'
 SAMTOOLS = 'samtools'
 SSNIPER = 'bam-somaticsniper'
 SAMTOOLS = 'samtools'
@@ -23,9 +25,11 @@ OPTITYPE = 'OptiTypePipeline.py'
 YARAI = 'yara_indexer'
 YARAM = 'yara_mapper'
 VEP = 'vep'
-VEP_OPTIONS = '--no_escape --offline --no_stats --af_gnomad --hgvs --cache --fields "Allele,Consequence,SYMBOL,' \
-              'Gene,Feature_type,Feature,BIOTYPE,EXON,INTRON,HGVSc,HGVSp,' \
-              'cDNA_position,CDS_position,Protein_position,Existing_variation,FLAGS,gnomAD_AF"'  # Could add --pick
+VEP_OPTIONS = (
+    '--no_escape --offline --no_stats --af_gnomad --hgvs --cache --fields "Allele,Consequence,SYMBOL,'
+    'Gene,Feature_type,Feature,BIOTYPE,EXON,INTRON,HGVSc,HGVSp,'
+    'cDNA_position,CDS_position,Protein_position,Existing_variation,FLAGS,gnomAD_AF"'
+)  # Could add --pick
 VCFTOOLS = 'vcftools'
 BGZIP = 'bgzip'
 TABIX = 'tabix'

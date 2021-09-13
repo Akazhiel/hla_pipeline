@@ -44,7 +44,10 @@ def create_epitope_varcode(chrm, start, ref, alt, db, transcript):
             elif pos == 1:
                 errors += ' mutation occurs in start codon'
             else:
-                if effect.mutant_protein_sequence is None or effect.original_protein_sequence is None:
+                if (
+                    effect.mutant_protein_sequence is None
+                    or effect.original_protein_sequence is None
+                ):
                     errors += ' could not retrieve protein sequence'
                 else:
                     # Type of effect
@@ -52,16 +55,15 @@ def create_epitope_varcode(chrm, start, ref, alt, db, transcript):
                     if 'Stop' in effect_type:
                         errors += ' stop mutation'
                     elif 'FrameShift' in effect_type:
-                        wt_mer = effect.original_protein_sequence[pos - 12:pos + 13]
-                        mut_mer = effect.mutant_protein_sequence[pos - 12:]
-                    elif 'Substitution' in effect_type \
-                            or 'Deletion' in effect_type:
-                        wt_mer = effect.original_protein_sequence[pos - 12:pos + 13]
-                        mut_mer = effect.mutant_protein_sequence[pos - 12:pos + 13]
+                        wt_mer = effect.original_protein_sequence[pos - 12 : pos + 13]
+                        mut_mer = effect.mutant_protein_sequence[pos - 12 :]
+                    elif 'Substitution' in effect_type or 'Deletion' in effect_type:
+                        wt_mer = effect.original_protein_sequence[pos - 12 : pos + 13]
+                        mut_mer = effect.mutant_protein_sequence[pos - 12 : pos + 13]
                     elif 'Insertion' in effect_type:
                         size = int(abs(len(ref) - len(alt)) / 3)
-                        wt_mer = effect.original_protein_sequence[pos - 12:pos + 13 + size]
-                        mut_mer = effect.mutant_protein_sequence[pos - 12:pos + 13 + size]
+                        wt_mer = effect.original_protein_sequence[pos - 12 : pos + 13 + size]
+                        mut_mer = effect.mutant_protein_sequence[pos - 12 : pos + 13 + size]
                     else:
                         errors += ' unknown exonic function {}'.format(effect_type)
     return pos, errors, wt_mer, mut_mer
