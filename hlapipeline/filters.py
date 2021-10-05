@@ -2,6 +2,7 @@
 @author: Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com
 """
 import gzip
+import pandas as pd
 
 from hlapipeline.common import exec_command
 from hlapipeline.tools import BCFTOOLS, DELLY
@@ -250,3 +251,18 @@ def delly_filter(input, output, sample1, sample2):
 
     cmd = '{} view delly_somatic.bcf -o {}'.format(BCFTOOLS, output)
     exec_command(cmd)
+
+
+def mutation_filter(csv_path):
+    df = pd.read_csv(csv_path, sep=',')
+    col_names = df.columns
+    df['Chrom'] = df['sequence_name'].str.split(':').str[0]
+    df = df.sort_values('Chrom').drop(columns='Chrom')
+    inp = df.values
+    n = len(df)
+    result = list()
+    for i in range(n):
+        if (inp[i][1] == 12) or (inp[i][1] <= 12 and ((inp[i][1] + len(inp[i][2])) >= 13)):
+            result.append(inp[i])
+    result_df = pd.DataFrame(result, columns=col_names)
+    result_df.to_csv('predictions_mut.csv', sep=',', index=False)

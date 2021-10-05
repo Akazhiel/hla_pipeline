@@ -9,12 +9,14 @@ The tools uses MHC-flurry for the predictions.
 
 @author: Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com>
 """
-from hlapipeline.common import exec_command
-from collections import Counter
-from collections import defaultdict
-import json
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+
+import os
 import sys
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from collections import Counter, defaultdict
+
+from hlapipeline.common import exec_command
+from hlapipeline.filters import mutation_filter
 
 
 def main(hla, overlap_final, alleles_file, mode, results, results_filter, cutoff):
@@ -107,11 +109,17 @@ def main(hla, overlap_final, alleles_file, mode, results, results_filter, cutoff
     print('Predicting MHCs with MUT peptides..')
     cmd = (
         'mhcflurry-predict-scan protein_sequences_mu.fasta --alleles {} '
-        '--no-throw --results-{} {} --out predictions_mut.csv --peptide-lengths 8-12'.format(
+        '--no-throw --results-{} {} --out tmp_predictions_mut.csv --peptide-lengths 8-12'.format(
             ' '.join(filtered_hla), results, results_filter
         )
     )
     exec_command(cmd)
+
+    print('Filtering predictions to remove WT peptides.')
+
+    # Filter tmp_predictions_mut.csv to keep only the predicted peptides that carry the mutation and remove the tmp file
+    mutation_filter('tmp_predictions_mut.csv')
+    os.remove('tmp_predictions_mut.csv')
 
     print('Predicting MHCs with WT peptides..')
     cmd = (

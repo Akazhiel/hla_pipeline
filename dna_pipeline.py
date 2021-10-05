@@ -116,7 +116,7 @@ def main(
         logger.info('Starting alignment')
 
         # Normal (paired)
-        cmd = '{} -t {} {} -K 100000000 -R "@RG\\tID:{}\\tPL:Illumina\\tLB:DNA\\tPU:{}\\tSM:{}\\tCN:{}" normal_val_1.fq.gz normal_val_2.fq.gz | ' '{} sort -m 2G --threads {} > sample2_header.bam'.format(
+        cmd = '{} -t {} {} -K 100000000 -R "@RG\\tID:{}\\tPL:Illumina\\tLB:DNA\\tPU:{}\\tSM:{}\\tCN:{}" normal_val_1.fq.gz normal_val_2.fq.gz | {} sort -m 2G --threads {} > sample2_header.bam'.format(
             BWA,
             THREADS,
             GENOME,
@@ -130,7 +130,7 @@ def main(
         p1 = exec_command(cmd, detach=True)
 
         # Tumor (paired)
-        cmd = '{} -t {} {} -K 100000000 -R "@RG\\tID:{}\\tPL:Illumina\\tLB:DNA\\tPU:{}\\tSM:{}\\tCN:{}" tumor_val_1.fq.gz tumor_val_2.fq.gz | ' '{} sort -m 2G --threads {} > sample1_header.bam'.format(
+        cmd = '{} -t {} {} -K 100000000 -R "@RG\\tID:{}\\tPL:Illumina\\tLB:DNA\\tPU:{}\\tSM:{}\\tCN:{}" tumor_val_1.fq.gz tumor_val_2.fq.gz | {} sort -m 2G --threads {} > sample1_header.bam'.format(
             BWA,
             THREADS,
             GENOME,
