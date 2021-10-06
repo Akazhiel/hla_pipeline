@@ -55,7 +55,9 @@ def strelka2_filter(input, output):
     vcf = gzip.open(input, 'rt')
     for line in vcf:
         if '##FORMAT=<ID=DP,' in line:
-            filtered_vcf.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n' + line)
+            filtered_vcf.write(
+                '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n' + line
+            )
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(line)
@@ -101,12 +103,11 @@ def strelka2_filter(input, output):
                 elif x != ref and i == 2:
                     Tumor_GT += '/1'
                     i = i + 1
-            filtered_vcf.write('{}\t{}\t{}:{}\t{}:{}\n'.format('\t'.join(columns[0:8]),
-                                                               Format,
-                                                               Normal_GT,
-                                                               Normal,
-                                                               Tumor_GT,
-                                                               Tumor))
+            filtered_vcf.write(
+                '{}\t{}\t{}:{}\t{}:{}\n'.format(
+                    '\t'.join(columns[0:8]), Format, Normal_GT, Normal, Tumor_GT, Tumor
+                )
+            )
         else:
             filtered_vcf.write(line)
     vcf.close()
@@ -141,8 +142,10 @@ def somaticSniper_filter(input, output):
 
     # NOTE replacing IUPAC codes from VCF
     # NOTE this will also skip variants whose REF and ALT fields are identical
-    cmd = 'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' ' \
-          'tmp_ss.vcf > ' + output
+    cmd = (
+        'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' '
+        'tmp_ss.vcf > ' + output
+    )
     exec_command(cmd)
 
 
@@ -159,7 +162,8 @@ def strelka2_filter_indels(input, output):
         if '##FORMAT=<ID=DP,' in line:
             filtered_vcf.write(
                 '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
-                '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n')
+                '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">\n'
+            )
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
             filtered_vcf.write(line)
@@ -178,12 +182,11 @@ def strelka2_filter_indels(input, output):
                 SGT = INFO_split[SGT_index].replace('SGT=', '').split('->')
                 Normal_GT = '0/0'
                 Tumor_GT = '0/1' if SGT[1] == 'het' else '1/1'
-                filtered_vcf.write('{}\t{}\t{}:{}\t{}:{}\n'.format('\t'.join(columns[0:8]),
-                                                                   Format,
-                                                                   Normal_GT,
-                                                                   Normal,
-                                                                   Tumor_GT,
-                                                                   Tumor))
+                filtered_vcf.write(
+                    '{}\t{}\t{}:{}\t{}:{}\n'.format(
+                        '\t'.join(columns[0:8]), Format, Normal_GT, Normal, Tumor_GT, Tumor
+                    )
+                )
         else:
             filtered_vcf.write(line)
     vcf.close()
@@ -203,7 +206,8 @@ def varscan_filter(input, output):
         if line.startswith('#') and 'DP4' in line:
             new_DP4 = line.replace(
                 'ID=DP4,Number=1,Type=String,Description="Strand read counts: ref/fwd, ref/rev, var/fwd, var/rev"',
-                'ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases"')
+                'ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases"',
+            )
             filtered_vcf.write(new_DP4)
         elif line.startswith('#CHROM'):
             headers = line.strip().split('\t')
@@ -221,6 +225,23 @@ def varscan_filter(input, output):
 
     # NOTE replacing IUPAC codes from VCF
     # NOTE this will also skip variants whose REF and ALT fields are identical
-    cmd = 'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' ' \
-          'tmp_varscan.vcf > ' + output
+    cmd = (
+        'awk \'{if ($1 ~ /#/) {print} else if ($4 != $5) {gsub(/W|K|B|Y|D|H|V|R|S|M/,"N",$4); OFS="\t"; print}}\' '
+        'tmp_varscan.vcf > ' + output
+    )
     exec_command(cmd)
+
+
+def mutation_filter(csv_path):
+    df = pd.read_csv(csv_path, sep=',')
+    col_names = df.columns
+    df['Chrom'] = df['sequence_name'].str.split(':').str[0]
+    df = df.sort_values('Chrom').drop(columns='Chrom')
+    inp = df.values
+    n = len(df)
+    result = list()
+    for i in range(n):
+        if (inp[i][1] == 12) or (inp[i][1] <= 12 and ((inp[i][1] + len(inp[i][2])) >= 13)):
+            result.append(inp[i])
+    result_df = pd.DataFrame(result, columns=col_names)
+    result_df.to_csv('predictions_mut.csv', sep=',', index=False)
