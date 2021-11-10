@@ -114,8 +114,8 @@ def main(hla, overlap_final, alleles_file, mode, results, results_filter, cutoff
     print('Filtering predictions to remove WT peptides.')
 
     # Filter tmp_predictions_mut.csv to keep only the predicted peptides that carry the mutation and remove the tmp file
-    mutation_filter('tmp_predictions_mut.csv')
-    os.remove('tmp_predictions_mut.csv')
+    # mutation_filter('tmp_predictions_mut.csv')
+    # os.remove('tmp_predictions_mut.csv')
 
     print('Predicting MHCs with WT peptides..')
     cmd = (

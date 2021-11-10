@@ -236,12 +236,14 @@ def mutation_filter(csv_path):
     df = pd.read_csv(csv_path, sep=',')
     col_names = df.columns
     df['Chrom'] = df['sequence_name'].str.split(':').str[0]
-    df = df.sort_values('Chrom').drop(columns='Chrom')
+    df = df.sort_values('Chrom').drop(columns='Chrom').reset_index(drop=True)
     inp = df.values
     n = len(df)
     result = list()
     for i in range(n):
-        if (inp[i][1] == 12) or (inp[i][1] <= 12 and ((inp[i][1] + len(inp[i][2])) >= 13)):
+        if ((inp[i][1] == 12) or (inp[i][1] <= 12 and ((inp[i][1] + len(inp[i][2])) >= 13))):
             result.append(inp[i])
-    result_df = pd.DataFrame(result, columns=col_names)
+        elif 'fs' in inp[i][0] and inp[i][1] > 12:
+            result.append(inp[i])
+    result_df = pd.DataFrame(result, columns = col_names)
     result_df.to_csv('predictions_mut.csv', sep=',', index=False)

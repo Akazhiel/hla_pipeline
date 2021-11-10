@@ -238,7 +238,7 @@ def filter_variants_dna(file, normal_coverage, tumor_coverage, tumor_var_depth,
                     normal_VAF = np.around((normal_AD / float(normal_DP)) * 100, 3) if normal_DP > 0.0 else 0.0
                     tumor_DP = int(called['TUMOR.somaticsniper']['DP'])
                     tumor_AD = sum(called['TUMOR.somaticsniper']['DP4'][2:])
-                    tumor_VAF = np.around((tumor_AD / float(tumor_DP)) * 100, 3)
+                    tumor_VAF = np.around((tumor_AD / float(tumor_DP)) * 100, 3) if tumor_DP > 0.0 else 0.0
                     tumor_normal_ratio = tumor_VAF / normal_VAF if normal_VAF != 0 else t2n_ratio
                     is_somatic = int(called['TUMOR.somaticsniper']['SS']) == 2
                     if normal_DP >= normal_coverage and tumor_DP >= tumor_coverage \
@@ -297,7 +297,7 @@ def filter_variants_dna(file, normal_coverage, tumor_coverage, tumor_var_depth,
                     token = called['TUMOR.strelka'][alt_index]
                     tumor_AD2 = int(token[0]) if type(token) is list else int(token)
                     tumor_DP = tumor_AD1 + tumor_AD2
-                    tumor_VAF = np.around((tumor_AD2 / float(tumor_DP)) * 100, 3)
+                    tumor_VAF = np.around((tumor_AD2 / float(tumor_DP)) * 100, 3) if tumor_DP > 0.0 else 0.0
                     tumor_normal_ratio = tumor_VAF / normal_VAF if normal_VAF != 0 else t2n_ratio
                     if normal_DP >= normal_coverage and tumor_DP >= tumor_coverage \
                             and tumor_VAF >= tumor_var_freq and tumor_AD2 >= tumor_var_depth \
@@ -323,7 +323,7 @@ def filter_variants_dna(file, normal_coverage, tumor_coverage, tumor_var_depth,
                     token = called['TUMOR.strelka_indel']['TIR']
                     tumor_AD2 = int(token[0]) if type(token) is list else int(token)
                     tumor_DP = tumor_AD1 + tumor_AD2
-                    tumor_VAF = np.around((tumor_AD2 / float(tumor_DP)) * 100, 3)
+                    tumor_VAF = np.around((tumor_AD2 / float(tumor_DP)) * 100, 3) if tumor_DP > 0.0 else 0.0
                     tumor_normal_ratio = tumor_VAF / normal_VAF if normal_VAF != 0 else t2n_ratio
                     if normal_DP >= normal_coverage and tumor_DP >= tumor_coverage \
                             and tumor_VAF >= tumor_var_freq and tumor_AD2 >= tumor_var_depth \
