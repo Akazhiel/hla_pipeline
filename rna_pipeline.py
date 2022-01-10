@@ -41,6 +41,7 @@ def main(R1,
          HLA_FASTA,
          KEEP,
          SPARK):
+         
     # TODO add sanity checks for the parameters
     if 'filter' in STEPS:
         if CACHEDIR is None:

@@ -326,10 +326,10 @@ def main(R1_NORMAL,
 
         # Merge scattered Mutect2 VCFs and Mutect2 stats prior filtering
 
-        cmd = 'bcftools concat --threads 8 -o Mutect_unfiltered.vcf -Ov Mutect_unfiltered_*.vcf'
+        cmd = '{} concat --threads 8 -o Mutect_unfiltered.vcf -Ov Mutect_unfiltered_*.vcf'.format(BCFTOOLS)
         p1 = exec_command(cmd, detach=True)
 
-        cmd = 'gatk MergeMutectStats -O Mutect_unfiltered.vcf.stats {}'.format(' '.join([f'--stats Mutect_unfiltered_{contig}.vcf.stats' for contig in contigs]))
+        cmd = '{} MergeMutectStats -O Mutect_unfiltered.vcf.stats {}'.format(GATK, ' '.join([f'--stats Mutect_unfiltered_{contig}.vcf.stats' for contig in contigs]))
         p2 = exec_command(cmd, detach=True)
 
         p1.wait()
