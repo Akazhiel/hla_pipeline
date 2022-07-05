@@ -1,6 +1,7 @@
 """
 @author: Jose Fernandez Navarro <jc.fernandez.navarro@gmail.com
 """
+
 from varcode import Variant
 from Bio.Seq import translate
 from Bio.Seq import IUPACData
@@ -16,10 +17,12 @@ def create_epitope_varcode(chrm, start, ref, alt, db, mut_dna, mut_aa, transcrip
     vinfo = Variant(contig=chrm, start=start, ref=ref, alt=alt, ensembl=db, allow_extended_nucleotides=True)
     effect = [effect for effect in vinfo.effects() if effect.transcript_id == transcript][0]
     errors = "Flags:"
-    wt_mer = '-'
-    mut_mer = '-'
+    wt_mer = ['-', '-']
+    mut_mer = ['-', '-']
+    starts = [13, 21]
+    ends = [12, 20]
     pos = -1
-    three_to_one = IUPACData.protein_letters_3to1
+    three_to_one = IUPACData.protein_letters_3to1_extended
     if effect is None:
         errors += ' could not infer the effect'
     else:
@@ -37,13 +40,13 @@ def create_epitope_varcode(chrm, start, ref, alt, db, mut_dna, mut_aa, transcrip
                     errors += ' can not code for this mutated position'
                 else:
                     protein_seq = AA_dict[transcript]
-                    end = aa_pos + 12 if aa_pos + 12 < len(protein_seq) else None
-                    start = aa_pos - 13
-                    if start < 0:
+                    end = [aa_pos + x if aa_pos + x < len(protein_seq) else None for x in ends]
+                    start = [aa_pos - x for x in starts]
+                    if any(ele < 0 for ele in start):
                         errors += ' Start of sequence is shorter than 12aa from mutation'
-                        start = 0
-                    wt_mer = protein_seq[start:end]
-                    mut_mer = protein_seq[start:aa_pos - 1] + var_AA + protein_seq[aa_pos:end]
+                        start = [0 if x < 0 else x for x in start]
+                    wt_mer = [protein_seq[x:y] for x, y in zip(start, end)]
+                    mut_mer = [protein_seq[x:aa_pos - 1] + var_AA + protein_seq[aa_pos:y] for x, y in zip(start, end)]
             elif 'inframe' in funcensgene:
                 if 'dup' in mut_dna:
                     dup_pos = cDNA_pos - 1
@@ -56,18 +59,19 @@ def create_epitope_varcode(chrm, start, ref, alt, db, mut_dna, mut_aa, transcrip
                 fs = len(ref)
                 cDNA_seq = cDNA_dict[transcript]
                 mut_cDNA = cDNA_seq[:cDNA_pos - 1] + cDNA_seq[cDNA_pos + fs - 1:]
-                start = aa_pos - 13
-                if start < 0:
+                start = [aa_pos - x for x in starts]
+                if any(ele < 0 for ele in start):
                     errors += ' Start of sequence is shorter than 12aa from mutation'
-                    start = 0
-                wt_mer = effect.original_protein_sequence[start:aa_pos+13]
+                    start = [0 if x < 0 else x for x in start]
+                wt_mer = [effect.original_protein_sequence[x:aa_pos + 13] for x in start]
                 mut_fasta = str(translate_dna(mut_cDNA.replace(' ', '')))
-                mut_mer = mut_fasta[start:]
+                mut_mer = [mut_fasta[x:] for x in start]
         elif protein_mut.startswith('p.X'):
             errors += ' mutation occurs in stop codon'
         else:
             # Retrieve pos
             pos = effect.aa_mutation_start_offset
+            protein_seq = effect.original_protein_sequence
             if pos is None:
                 errors += ' could not find the position for this mutation'
             elif pos == 0:
@@ -81,28 +85,30 @@ def create_epitope_varcode(chrm, start, ref, alt, db, mut_dna, mut_aa, transcrip
                     if 'Stop' in effect_type:
                         errors += ' stop mutation'
                     elif 'FrameShift' in effect_type:
-                        start = pos - 12
-                        if start < 0:
+                        start = [pos - x + 1 for x in starts]
+                        end = [pos + x + 1 if pos + x + 1 < len(protein_seq) else None for x in ends]
+                        if any(ele < 0 for ele in start):
                             errors += ' Start of sequence is shorter than 12aa from mutation'
-                            start = 0
-                        wt_mer = effect.original_protein_sequence[start:pos+13]
-                        mut_mer = effect.mutant_protein_sequence[start:]
+                            start = [0 if x < 0 else x for x in start]
+                        wt_mer = [effect.original_protein_sequence[x:y] for x, y in zip(start, end)]
+                        mut_mer = [effect.mutant_protein_sequence[x:] for x in start]
                     elif 'Substitution' in effect_type \
                             or 'Deletion' in effect_type:
-                        start = pos - 12
-                        if start < 0:
+                        start = [pos - x + 1 for x in starts]
+                        end = [pos + x + 1 if pos + x + 1 < len(protein_seq) else None for x in ends]
+                        if any(ele < 0 for ele in start):
                             errors += ' Start of sequence is shorter than 12aa from mutation'
-                            start = 0
-                        wt_mer = effect.original_protein_sequence[start:pos+13]
-                        mut_mer = effect.mutant_protein_sequence[start:pos+13]
+                            start = [0 if x < 0 else x for x in start]
+                        wt_mer = [effect.original_protein_sequence[x:y] for x, y in zip(start, end)]
+                        mut_mer = [effect.mutant_protein_sequence[x:y] for x, y in zip(start, end)]
                     elif 'Insertion' in effect_type:
-                        start = pos - 12
-                        if start < 0:
+                        start = [pos - x + 1 for x in starts]
+                        if any(ele < 0 for ele in start):
                             errors += ' Start of sequence is shorter than 12aa from mutation'
-                            start = 0
+                            start = [0 if x < 0 else x for x in start]
                         size = int(abs(len(ref) - len(alt)) / 3)
-                        wt_mer = effect.original_protein_sequence[start:pos+13+size]
-                        mut_mer = effect.mutant_protein_sequence[start:pos+13+size]
+                        wt_mer = [effect.original_protein_sequence[x:pos+size+13] for x in start]
+                        mut_mer = [effect.mutant_protein_sequence[x:pos+size+13] for x in start]
                     else:
                         errors += ' unknown exonic function {}'.format(effect_type)
     return pos, errors, wt_mer, mut_mer

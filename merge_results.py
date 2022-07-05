@@ -116,8 +116,8 @@ def main(dna_variants,
                    'DNA samples (failing)\tNumber of DNA samples (failing)\t' \
                    'RNA samples (passing)\tNumber of RNA samples (passing)\t' \
                    'RNA samples (failing)\tNumber of RNA samples (failing)\tEffects\t' \
-                   'cDNA change\tAA change\tEpitope creation flags\tWt Epitope\t' \
-                   'Mut Epitope\tTranscripts\tDNA Callers Sample(Name:NDP;NAD;NVAF;TDP;TAD;TVAF)\t' \
+                   'cDNA change\tAA change\tEpitope creation flags\tWt Epitope 25mer\t' \
+                   'Mut Epitope 25mer\tWt Epitope 41mer\tMut Epitope 41mer\tTranscripts\tDNA Callers Sample(Name:NDP;NAD;NVAF;TDP;TAD;TVAF)\t' \
                    'RNA Callers Sample(Name:TDP;TAD;TVAF)\tGeneCount info Sample(gene;exp;mean;percentile)\n'
 
     final_file = open('overlap_final.txt', 'w')
@@ -160,7 +160,7 @@ def main(dna_variants,
         epitopes_dict = defaultdict(list)
         for variant, _ in value:
             for e in variant.epitopes:
-                epitopes_dict[e.mutseq].append(e)
+                epitopes_dict[e.mutseq[0]].append(e)
 
         # Iterate epitopes in the variant and write info to output
         for _, epitopes in epitopes_dict.items():
@@ -191,7 +191,7 @@ def main(dna_variants,
                                                   ';'.join(rna_name_pass), num_rna_pass,
                                                   ';'.join(rna_name_fail), num_rna_fail,
                                                   effect, epitope.dnamut, epitope.aamut, epitope.flags,
-                                                  epitope.wtseq, epitope.mutseq, transcripts,
+                                                  epitope.wtseq[0], epitope.mutseq[0], epitope.wtseq[1], epitope.mutseq[1], transcripts,
                                                   dna_callers, rna_callers, ';'.join(gene_locus)])
             if num_dna_pass >= 1:
                 final_file.write(to_write + '\n')
